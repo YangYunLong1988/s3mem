@@ -18,9 +18,14 @@
 #define _MEM_ADDR_H_
 
 #include "types.h"
+#include "sizes.h"
 
 /* Function statement*/
 int mem_pagesize(void);
 void mem_phyaddr(ul vaddr, ul *paddr);
+void print_with_log(
+    char *Format,
+    ...
+);
 
 #endif

@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include "types.h"
 #include "sizes.h"
@@ -78,8 +79,7 @@ int compare_regions(ulv *bufa, ulv *bufb, size_t count) {
             if (use_phys)
             {
                 physaddr = physaddrbase + (i * sizeof(ul));
-                fprintf(stderr,
-                        "FAILURE: 0x%016x != 0x%016x at physical address "
+                print_with_log("FAILURE: 0x%016x != 0x%016x at physical address "
                         "0x%016x.\n",
                         (ul) *p1, (ul) *p2, physaddr);
             }
@@ -88,25 +88,22 @@ int compare_regions(ulv *bufa, ulv *bufb, size_t count) {
                 if(((ul) *p1) != sleeptestvalue)
             	{
             		mem_phyaddr((ul)p1, &phyaddtemp);
-                    fprintf(stderr,
-                            "FAILURE: 0x%016llx (Phy - %016llX) != %016llx.\n",
+                    print_with_log("FAILURE: 0x%016llx (Phy - %016llX) != %016llx.\n",
                             (ul) *p1, phyaddtemp, sleeptestvalue);
             	}
 
                 if (((ul) *p2) != sleeptestvalue)
                 {
                     mem_phyaddr((ul)p2, &phyaddtemp);
-                    fprintf(stderr,
-                            "FAILURE: 0x%016llx (Phy - %016llX) != %016llx.\n",
+                    print_with_log("FAILURE: 0x%016llx (Phy - %016llX) != %016llx.\n",
                             (ul) *p2, phyaddtemp, sleeptestvalue);
                 }
-
             }
             r = -1;
         }
     }
 
-    fprintf(stderr, "Total failed count: %d\n", errorCount);
+    print_with_log("Total failed count: %d\n", errorCount);
 
     return r;
 }
@@ -121,7 +118,7 @@ void sleep_system(struct sleep_param param)
     rtcTimerfd = open("/sys/class/rtc/rtc0/wakealarm", O_WRONLY);
     if (rtcTimerfd == -1)
     {
-        fprintf(stderr, "failed to open /sys/class/rtc/rtc0/wakealarm for wake timer setting!\n");
+        print_with_log("failed to open /sys/class/rtc/rtc0/wakealarm for wake timer setting!\n%s\n", strerror(errno));
         exit(0);
     }
 
@@ -134,7 +131,7 @@ void sleep_system(struct sleep_param param)
         sysStatefd = open("/sys/power/state", O_WRONLY);
         if (sysStatefd == -1)
         {
-            fprintf(stderr, "failed to open /sys/power/state for system sleep!\n");
+            print_with_log("failed to open /sys/power/state for system sleep!\n%s\n", strerror(errno));
             exit(0);
         }
         sleep(2);
@@ -143,7 +140,7 @@ void sleep_system(struct sleep_param param)
     }
     else
     {
-        fprintf(stderr, "Set wake up timer failed!\n");
+        print_with_log("Set wake up timer failed!\n");
     }
 
     close(rtcTimerfd);

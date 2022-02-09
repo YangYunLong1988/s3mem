@@ -27,6 +27,7 @@
 #define __version__ "1.0.0"
 
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -70,14 +71,40 @@ void check_posix_system(void) {
 void usage(char *me);
 
 /* Global vars - so tests have access to this information */
+int LogFd = -1;
 int use_phys = 0;
 off_t physaddrbase = 0;
 unsigned long sleeptestvalue = 0xFFFFFFFFFFFFFFFF;
+char Buffer[400];
 
 /* Function definitions */
+void print_with_log(
+    char *Format,
+    ...
+)
+{
+    va_list ArgList;
+        
+    va_start(ArgList, Format);
+
+    vsprintf(Buffer, Format, ArgList);
+
+    va_end(ArgList);
+
+    fprintf(stderr, "%s", Buffer);
+    if(LogFd != -1)
+    {
+        write(LogFd, Buffer, strlen(Buffer));
+    }
+    
+    fsync(LogFd);
+
+    return;
+}
+
 void usage(char *me) {
     fprintf(stderr, "\n"
-            "Usage: %s [-p physaddrbase [-d device]] [-m <sleeptype>[mem|disk]] [-s sleeptime(s)] [-t waketime(s)] [-v testvalue(hex)] <mem>[B|K|M|G] [loops]\n",
+            "Usage: %s [-p physaddrbase [-d device]] [-m <sleeptype>[mem|disk]] [-s sleeptime(s)] [-t waketime(s)] [-v testvalue(hex)][-j journalfile] <mem>[B|K|M|G] [loops]\n",
             me);
     exit(EXIT_FAIL_NONSTARTER);
 }
@@ -132,7 +159,7 @@ int main(int argc, char **argv) {
     }
 
     // Parse command line parameters
-    while ((opt = getopt(argc, argv, "p:d:m:s:t:v:")) != -1) {
+    while ((opt = getopt(argc, argv, "p:d:m:s:t:v:j:")) != -1) {
         switch (opt) {
             case 'p':
                 errno = 0;
@@ -238,6 +265,17 @@ int main(int argc, char **argv) {
                     usage(argv[0]); /* doesn't return */
                 }
                 break;
+            case 'j':
+                errno = 0;
+
+                LogFd = open(optarg, O_WRONLY | O_CREAT);
+                if(LogFd == -1)
+                {
+                    fprintf(stderr,
+                            "Cannot write to %s. %s", optarg, strerror(errno));
+                    exit(0);
+                }
+                break;
             default: /* '?' */
                 usage(argv[0]); /* doesn't return */
         }
@@ -313,15 +351,16 @@ int main(int argc, char **argv) {
     }
 
     // print sleep setting
-    printf("\nsleep type: %s\t sleep time: %ds\t wake time: %ds\t test loop: %d\n\n",
+    print_with_log("\n ================== Test Start =====================");
+    print_with_log("\nsleep type: %s\t sleep time: %ds\t wake time: %ds\t test loop: %d\n\n",
            slpparam.sleeptype, slpparam.sleeptime, slpparam.waketime, loops);
-    printf("want %lluMB (%llu bytes)\n", (ull) wantmb, (ull) wantbytes);
+    print_with_log("want %lluMB (%llu bytes)\n", (ull) wantmb, (ull) wantbytes);
     buf = NULL;
 
     if (use_phys) {
         memfd = open(device_name, O_RDWR | O_SYNC);
         if (memfd == -1) {
-            fprintf(stderr, "failed to open %s for physical memory: %s\n",
+            print_with_log("failed to open %s for physical memory: %s\n",
                     device_name, strerror(errno));
             exit(EXIT_FAIL_NONSTARTER);
         }
@@ -329,13 +368,13 @@ int main(int argc, char **argv) {
                                      MAP_SHARED | MAP_LOCKED, memfd,
                                      physaddrbase);
         if (buf == MAP_FAILED) {
-            fprintf(stderr, "failed to mmap %s for physical memory: %s\n",
+            print_with_log("failed to mmap %s for physical memory: %s\n",
                     device_name, strerror(errno));
             exit(EXIT_FAIL_NONSTARTER);
         }
 
         if (mlock((void *) buf, wantbytes) < 0) {
-            fprintf(stderr, "failed to mlock mmap'ed space\n");
+            print_with_log("failed to mlock mmap'ed space\n");
             do_mlock = 0;
         }
 
@@ -350,11 +389,11 @@ int main(int argc, char **argv) {
             if (!buf) wantbytes -= pagesize;
         }
         bufsize = wantbytes;
-        printf("got  %lluMB (%llu bytes)", (ull) wantbytes >> 20,
+        print_with_log("got  %lluMB (%llu bytes)", (ull) wantbytes >> 20,
             (ull) wantbytes);
         fflush(stdout);
         if (do_mlock) {
-            printf(", trying mlock ...");
+            print_with_log(", trying mlock ...");
             fflush(stdout);
             if ((size_t) buf % pagesize) {
                 /* printf("aligning to page -- was 0x%tx\n", buf); */
@@ -370,41 +409,41 @@ int main(int argc, char **argv) {
             if (mlock((void *) aligned, bufsize) < 0) {
                 switch(errno) {
                     case EAGAIN: /* BSDs */
-                        printf("over system/pre-process limit, reducing...\n");
+                        print_with_log("over system/pre-process limit, reducing...\n");
                         free((void *) buf);
                         buf = NULL;
                         wantbytes -= pagesize;
                         break;
                     case ENOMEM:
-                        printf("too many pages, reducing...\n");
+                        print_with_log("too many pages, reducing...\n");
                         free((void *) buf);
                         buf = NULL;
                         wantbytes -= pagesize;
                         break;
                     case EPERM:
-                        printf("insufficient permission.\n");
-                        printf("Trying again, unlocked:\n");
+                        print_with_log("insufficient permission.\n");
+                        print_with_log("Trying again, unlocked:\n");
                         do_mlock = 0;
                         free((void *) buf);
                         buf = NULL;
                         wantbytes = wantbytes_orig;
                         break;
                     default:
-                        printf("failed for unknown reason.\n");
+                        print_with_log("failed for unknown reason.\n");
                         do_mlock = 0;
                         done_mem = 1;
                 }
             } else {
-                printf("locked.\n");
+                print_with_log("locked.\n");
                 done_mem = 1;
             }
         } else {
             done_mem = 1;
-            printf("\n");
+            print_with_log("\n");
         }
     }
 
-    if (!do_mlock) fprintf(stderr, "Continuing with unlocked memory; testing "
+    if (!do_mlock) print_with_log("Continuing with unlocked memory; testing "
                            "will be slower and less reliable.\n");
 
     /* Do alighnment here as well, as some cases won't trigger above if you
@@ -426,11 +465,11 @@ int main(int argc, char **argv) {
     bufb = (ulv *) ((size_t) aligned + halflen);
 
     for(loop=1; ((!loops) || loop <= loops); loop++) {
-        printf("Loop %lu", loop);
-        if (loops) {
-            printf("/%lu", loops);
-        }
-        printf(":\n");
+        print_with_log("Loop %lu", loop);
+        //if (loops) {
+        //    printf("/%lu", loops);
+        //}
+        print_with_log(":\n");
         for (i=0;;i++) {
             if (!tests_list[i].name) break;
             /* If using a custom testmask, only run this test if the
@@ -439,32 +478,36 @@ int main(int argc, char **argv) {
             if (testmask && (!((1 << i) & testmask))) {
                 continue;
             }
-            printf("  %-20s: ", tests_list[i].name);
+            print_with_log("  %-02s: ", tests_list[i].name);
             // 1, fill the mem with test value
             tests_list[i].fillmem(bufa, bufb, count);
             // 2, sleep the system and continue after resume
             sleep_system(slpparam);
             // 3, verify the mem
             if (!tests_list[i].verfmem(bufa, bufb, count)) {
-                printf("ok\n");
+                print_with_log("ok\n");
                 // delay for wake time setting
                 if(loop < loops)
                     sleep(slpparam.waketime);
                 continue;
             } else {
                 exit_code |= EXIT_FAIL_OTHERTEST;
-                printf("Sleep memory test failed！ Press any key to continue...");
+                print_with_log("Sleep memory test failed！ Press any key to continue...");
                 getchar();
             }
             fflush(stdout);
             /* clear buffer */
             memset((void *) buf, 255, wantbytes);
         }
-        printf("\n");
+        print_with_log("\n");
         fflush(stdout);
     }
     if (do_mlock) munlock((void *) aligned, bufsize);
-    printf("Done.\n");
+    print_with_log("Done.\n");
     fflush(stdout);
+    if(LogFd != -1)
+    {
+        close(LogFd);
+    }
     exit(exit_code);
 }

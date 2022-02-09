@@ -37,5 +37,9 @@
 int test_sleep_mem(unsigned long volatile *bufa, unsigned long volatile *bufb, size_t count);
 int compare_regions(unsigned long volatile *bufa, unsigned long volatile *bufb, size_t count);
 void sleep_system(struct sleep_param);
+void print_with_log(
+    char *Format,
+    ...
+);
 
 #endif
