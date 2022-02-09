@@ -19,6 +19,8 @@ The command is likely to be
   * -m [mem | disk]   is used to choose the sleep type. mem is for suspend to ram, aka ACPI S3. disk is for hibernate, aka ACPI S4. 
   * -t seconds        is used to choose the wakeup time. It will determine the system wakeup time before fall into sleep.
   * -s seconds        is used to set the sleep time. It will setup wakeup timer, which will wake the system after timer timeout.
+  * -v testValue      is used to set the test value which will used to fill the memory and tested after system resume from sleep state.
+  * -j logfile        is used to specific the test log file path.
   * mem[B|K|M|G]      is used to set the memory size to be tested. 
   * [loops]           is used to set test loops.
   
