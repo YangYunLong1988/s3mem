@@ -68,6 +68,12 @@ endif()
 
 add_subdirectory(library)
 
+if(STATIC_LINK)
+	if(CMAKE_HOST_UNIX)
+		set(CMAKE_EXE_LINKER_FLAGS "-static")
+	endif()
+endif()
+
 target_link_libraries(s3mem
 PUBLIC commonLib
 PUBLIC osDepsLib)

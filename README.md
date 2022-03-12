@@ -25,7 +25,7 @@ The command is likely to be
 
 ### Build
 For Unix-like system build. cmake, make and gcc is needed.
-1. Execute "cmake ." from root directory of the source code.
+1. Execute "cmake ." from root directory of the source code. If you need static build, append "-DSTATIC_LINK=1" to config static build.
 2. Execute "make".
 
 For windows system build. cmake, MSVC build environment is needed.
