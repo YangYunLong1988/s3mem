@@ -18,6 +18,8 @@ int virtToPhy(
     uint64_t volatile *PhysicalAddress
 );
 
+int AcquirePrivilidge(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

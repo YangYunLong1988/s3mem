@@ -45,6 +45,13 @@ int main(int argc, char *argv[])
 
     // Start
     startupMessages();
+    errno = AcquirePrivilidge();
+    if(errno != 0)
+    {
+        // Exit the program if failed to acquire requested privilidge
+        fprintf(stderr, "ERROR: Failed to acquire privilidges!\n");
+        exit(EXIT_FAILURE);
+    }
 
     // Parse the commandline parameters
     while ((cmdOption = getopt(argc, argv, "s:t:v:j:")) != -1)
@@ -218,7 +225,7 @@ int main(int argc, char *argv[])
         uint64_t    volatile  *bufa, *bufb;
 
         halflen = memorySizeInByte / 2;
-        count = halflen / sizeof(uint32_t);
+        count = halflen / sizeof(uint64_t);
         bufa = (uint64_t volatile *) testMemArea;
         bufb = (uint64_t volatile *) ((size_t) testMemArea + halflen);
 

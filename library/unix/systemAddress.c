@@ -168,3 +168,8 @@ int virtToPhy(
 
     *PhysicalAddress = (phy_pageIndex * pageSize) + page_offset;
 }
+
+int AcquirePrivilidge(void)
+{
+    return EXIT_SUCCESS;
+}
