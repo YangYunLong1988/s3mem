@@ -44,3 +44,10 @@ int suspendSystem(uint64_t Delay)
 
     close(rtcTimerfd);
 }
+
+int SleepInSeconds(
+    uint32_t Seconds
+)
+{
+    return sleep(Seconds);
+}

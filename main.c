@@ -229,6 +229,9 @@ int main(int argc, char *argv[])
         bufa = (uint64_t volatile *) testMemArea;
         bufb = (uint64_t volatile *) ((size_t) testMemArea + halflen);
 
+        //
+        print("---------------- S3 Memtest Loop %d Start ----------------\n", Loop);
+
         // Fill test data
         fillMem(bufa, bufb, testData, count);
 
@@ -244,6 +247,12 @@ int main(int argc, char *argv[])
             // getchar();
             print("memory test failed！\n");
         }
+
+        // wakeup Delay
+        SleepInSeconds(wakeDelay);
+
+        //
+        print("---------------- S3 Memtest Loop %d End ----------------\n", Loop);
     }
 
 

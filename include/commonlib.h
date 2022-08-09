@@ -16,7 +16,9 @@ void print(
     ...
 );
 
-int closeLogFile(void);
+int closeLogFile(
+    void
+);
 
 int openLogFile(
     char    *logFilePath
@@ -26,13 +28,19 @@ int fillMem(
     uint64_t volatile  *bufa,
     uint64_t volatile  *bufb,
     uint64_t           testData,
-    size_t             count);
+    size_t             count
+);
 
 int verifyMem(
     uint64_t volatile  *bufa,
     uint64_t volatile  *bufb,
     uint64_t           testData,
-    size_t             count);
+    size_t             count
+);
+
+int SleepInSeconds(
+    uint32_t Seconds
+);
 
 #ifdef __cplusplus
 }

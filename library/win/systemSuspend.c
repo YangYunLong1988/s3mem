@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <synchapi.h>
 #include <powrprof.h>
 
 HANDLE          RtcTimer = NULL;
@@ -25,7 +26,7 @@ int suspendSystem(uint64_t Delay)
     due.LowPart = (DWORD) (NanoSecs & 0xFFFFFFFF);
     due.HighPart = (LONG) (NanoSecs >> 32);
 
-    if(!SetWaitableTimer(RtcTimer, &due, 0, 0, 0, TRUE))
+    if(!SetWaitableTimer(RtcTimer, &due, 0, NULL, NULL, TRUE))
     {
         printf("SetWaitableTimer failed (%u)\n", GetLastError());
         return EXIT_FAILURE;
@@ -37,7 +38,24 @@ int suspendSystem(uint64_t Delay)
         printf("SetSuspendState failed (%u)\n", GetLastError());
         return EXIT_FAILURE;
     }
+
+    // Wait for the timer.
+
+    if (WaitForSingleObject(RtcTimer, INFINITE) != WAIT_OBJECT_0)
+    {
+        printf("WaitForSingleObject failed (%d)\n", GetLastError());
+    }
+
     // Wakeup now
 
     return EXIT_SUCCESS;
+}
+
+int SleepInSeconds(
+    uint32_t Seconds
+)
+{
+    Sleep(Seconds * 1000);
+
+    return 0;
 }
