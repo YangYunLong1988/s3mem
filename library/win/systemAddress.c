@@ -20,8 +20,8 @@ int virtToPhy(
         return EFAULT;
     }
 
-    PageIndex = (*VirtualAddress - (uint64_t)lpMemReserved) / SysPageSize;
-    PageOffset = (*VirtualAddress - (uint64_t)lpMemReserved) % SysPageSize;
+    PageIndex = ((uint64_t)VirtualAddress - (uint64_t)lpMemReserved) / SysPageSize;
+    PageOffset = ((uint64_t)VirtualAddress - (uint64_t)lpMemReserved) % SysPageSize;
 
     if(PageIndex > (PFNArraySize / sizeof(uint64_t)))
     {
